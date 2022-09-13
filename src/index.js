@@ -1,36 +1,42 @@
 const app = require('express')();
 const axios = require('axios');
+const polyline = require('polyline');
 require('dotenv').config();
 const port = process.env.PORT || 3500;
 
 app.listen(port, () => {
   console.log(`Server successfully started and is running on ${port}.`);
+  if (!process.env.LIME_TOKEN) {
+    console.log('Please add a Lime Token to get started.');
+  } else {
+    console.log(`Ready. Run your first API call!`);
+  };
 });
 
 app.get('/vehicles', async (req, res) => {
-  const { swLat, swLng, neLat, neLng, fetchLime } = req.query;
+  const { ne_lat, ne_lng, sw_lat, sw_lng, filters } = req.query;
 
   try {
-    if ( !req.query.swLat || !req.query.swLng || !req.query.neLat || !req.query.neLng ) {
+    if ( !ne_lat || !ne_lng || !sw_lat || !sw_lng || !filters ) {
       return res.status(400).json({
         success: false,
-        msg: 'Params: [swLat, swLng, neLat, neLng] are all required. Please include these in your next request.'
-      })
+        msg: 'Params: [ne_lat, ne_lng, sw_lat, sw_lng, filters] are all required. Please include these in your next request.'
+      });
     };
 
     var data = [];
 
-    if (fetchLime) {
+    if (filters && filters.toLowerCase().includes('lime')) {
       const response = await axios({
         method: 'get',
         url: 'https://web-production.lime.bike/api/rider/v1/views/map',
         params: {
-          ne_lat: neLat,
-          ne_lng: neLng,
-          sw_lat: swLat,
-          sw_lng: swLng,
-          user_latitude: neLat,
-          user_longitude: neLng,
+          ne_lat,
+          ne_lng,
+          sw_lat,
+          sw_lng,
+          user_latitude: ne_lat,
+          user_longitude: ne_lng,
           zoom: 16
         },
         headers: {
@@ -38,7 +44,8 @@ app.get('/vehicles', async (req, res) => {
         }
       });
 
-      if (!response.data.data.attributes.bikes) {
+      const { bikes } = response.data.data.attributes;
+      if (!bikes) {
         console.log('Lime: No vehicles found.');
         return res.json({
           success: true,
@@ -46,9 +53,9 @@ app.get('/vehicles', async (req, res) => {
           data
         })
       };
-      console.log('Available bikes: ' + response.data.data.attributes.bikes.length);
 
-      response.data.data.attributes.bikes.map((vehicle) => {
+      console.log('Available bikes: ' + bikes.length);
+      bikes.map((vehicle) => {
         data = [...data, {
           id: vehicle.id,
           code: vehicle.attributes.plate_number,
@@ -59,6 +66,102 @@ app.get('/vehicles', async (req, res) => {
           provider: 'Lime'
         }];
       });
+    };
+
+    res.json({
+      success: true,
+      count: data.length,
+      data
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      msg: `Something went wrong. ${error.message}`
+    });
+  };
+});
+
+app.get('/zones', async (req, res) => {
+  const { ne_lat, ne_lng, sw_lat, sw_lng, filters, coordinates_output_type } = req.query;
+
+  try {
+    if (!ne_lat || !ne_lng || !sw_lat || !sw_lng || !filters || !coordinates_output_type) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Bad request. Params: [ne_lat, ne_lng, sw_lat, sw_lng, filters, coordinates_output_type] are required.'
+      });
+    };
+    if (coordinates_output_type !== 'geojson' && coordinates_output_type !== 'polyline') {
+      return res.status(400).json({
+        success: false,
+        msg: 'Bad request. Param "coordinates_output_type" must match [geojson, polyline].'
+      });
+    };
+
+    var data = [];
+
+    if (filters && filters.toLowerCase().includes('lime')) {
+      const response = await axios({
+        method: 'get',
+        url: 'https://web-production.lime.bike/api/rider/v1/views/map',
+        params: {
+          ne_lat,
+          ne_lng,
+          sw_lat,
+          sw_lng,
+          user_latitude: ne_lat,
+          user_longitude: ne_lng,
+          zoom: 16
+        },
+        headers: {
+          Authorization: `Bearer ${process.env.LIME_TOKEN}`
+        }
+      });
+
+      const { zones } = response.data.data.attributes;
+      if (!zones) {
+        console.log('Lime: No zones found.');
+        return res.json({
+          success: true,
+          count: 0,
+          data
+        })
+      };
+
+      if (coordinates_output_type === 'geojson') {
+        zones.map((zone) => {
+          data = [...data, {
+            id: zone.id,
+            name: zone.attributes.name,
+            type: zone.attributes.category,
+            coordinates: {
+              type: 'geojson',
+              area: polyline.decode(zone.attributes.polyline)
+            },
+            lat: zone.attributes.icon_latitude,
+            lng: zone.attributes.icon_longitude,
+            vehicle_types: zone.attributes.associated_vehicle_types,
+            provider: 'Lime'
+          }];
+        });
+      } else {
+        zones.map((zone) => {
+          data = [...data, {
+            id: zone.id,
+            name: zone.attributes.name,
+            category: zone.attributes.type,
+            coordinates: {
+              type: 'polyline',
+              area: zone.attributes.polyline
+            },
+            lat: zone.attributes.icon_latitude,
+            lng: zone.attributes.icon_longitude,
+            vehicle_types: zone.attributes.associated_vehicle_types,
+            provider: 'Lime'
+          }];
+        });
+      }
     };
 
     res.json({
