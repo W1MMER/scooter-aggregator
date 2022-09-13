@@ -12,7 +12,7 @@ app.get('/vehicles', async (req, res) => {
 
   try {
     if ( !req.query.swLat || !req.query.swLng || !req.query.neLat || !req.query.neLng ) {
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         msg: 'Params: [swLat, swLng, neLat, neLng] are all required. Please include these in your next request.'
       })
