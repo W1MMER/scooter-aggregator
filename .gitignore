@@ -1,0 +1,9 @@
+# dotenv vars
+.env*
+!.env.example
+
+# dependancies
+node_modules/
+
+# other
+package-lock.json
