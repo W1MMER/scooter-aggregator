@@ -1,5 +1,6 @@
 const app = require('express')();
 const axios = require('axios');
+const turf = require('@turf/turf')
 const polyline = require('polyline');
 require('dotenv').config();
 const port = process.env.PORT || 3500;
@@ -14,17 +15,23 @@ app.listen(port, () => {
 });
 
 app.get('/vehicles', async (req, res) => {
-  const { ne_lat, ne_lng, sw_lat, sw_lng, filters } = req.query;
+  const { ne_lat, ne_lng, sw_lat, sw_lng, filters, minimum_battery } = req.query;
 
   try {
-    if ( !ne_lat || !ne_lng || !sw_lat || !sw_lng || !filters ) {
+    if (!ne_lat || !ne_lng || !sw_lat || !sw_lng || !filters) {
       return res.status(400).json({
         success: false,
-        msg: 'Params: [ne_lat, ne_lng, sw_lat, sw_lng, filters] are all required. Please include these in your next request.'
+        msg: 'Bad request. Params: [ne_lat, ne_lng, sw_lat, sw_lng, filters] are required.'
       });
     };
 
     var data = [];
+
+    // const p = turf.point([parseInt(ne_lng), parseInt(ne_lat)]);
+    // buffer = turf.buffer(p, 0.1, {units: 'meters'});
+    // bbox = turf.bbox(buffer);
+    // poly = turf.bboxPolygon(bbox);
+    // console.log(bbox);
 
     if (filters && filters.toLowerCase().includes('lime')) {
       const response = await axios({
@@ -51,20 +58,35 @@ app.get('/vehicles', async (req, res) => {
           success: true,
           count: 0,
           data
-        })
+        });
       };
 
       console.log('Available bikes: ' + bikes.length);
       bikes.map((vehicle) => {
-        data = [...data, {
-          id: vehicle.id,
-          code: vehicle.attributes.plate_number,
-          status: vehicle.attributes.status,
-          lat: vehicle.attributes.latitude,
-          lng: vehicle.attributes.longitude,
-          battery: vehicle.attributes.battery_percentage,
-          provider: 'Lime'
-        }];
+        if (minimum_battery && vehicle.attributes.battery_percentage >= minimum_battery) {
+          data = [...data, {
+            provider: 'Lime',
+            id: vehicle.id,
+            code: vehicle.attributes.plate_number,
+            status: vehicle.attributes.status,
+            lat: vehicle.attributes.latitude,
+            lng: vehicle.attributes.longitude,
+            battery: vehicle.attributes.battery_percentage,
+            generation: vehicle.attributes.generation
+          }];
+        };
+        if (!minimum_battery) {
+          data = [...data, {
+            provider: 'Lime',
+            id: vehicle.id,
+            code: vehicle.attributes.plate_number,
+            status: vehicle.attributes.status,
+            lat: vehicle.attributes.latitude,
+            lng: vehicle.attributes.longitude,
+            battery: vehicle.attributes.battery_percentage,
+            generation: vehicle.attributes.generation
+          }];
+        };
       });
     };
 
@@ -135,9 +157,9 @@ app.get('/zones', async (req, res) => {
             id: zone.id,
             name: zone.attributes.name,
             type: zone.attributes.category,
-            coordinates: {
+            area: {
               type: 'geojson',
-              area: polyline.decode(zone.attributes.polyline)
+              coordinates: polyline.decode(zone.attributes.polyline)
             },
             lat: zone.attributes.icon_latitude,
             lng: zone.attributes.icon_longitude,
@@ -150,10 +172,10 @@ app.get('/zones', async (req, res) => {
           data = [...data, {
             id: zone.id,
             name: zone.attributes.name,
-            category: zone.attributes.type,
-            coordinates: {
+            type: zone.attributes.category,
+            area: {
               type: 'polyline',
-              area: zone.attributes.polyline
+              coordinates: zone.attributes.polyline
             },
             lat: zone.attributes.icon_latitude,
             lng: zone.attributes.icon_longitude,

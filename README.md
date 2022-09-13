@@ -13,13 +13,14 @@ Providers:
 **Get Vehicles**:
 
 GET http://localhost:3500/vehicles
-| Parameters | Description                   | Mandatory |
-| ---------- | ----------------------------- | :-------: |
-| ne_lat     | north-east latitude           | X         |
-| ne_lng     | north-east longitude          | X         |
-| sw_lat     | south-west latitude           | X         |
-| sw_lng     | south-west longitude          | X         |
-| filters    | array with companies ["lime"] | X         |
+| Parameters      | Description                   | Mandatory |
+| --------------- | ----------------------------- | :-------: |
+| ne_lat          | north-east latitude           | X         |
+| ne_lng          | north-east longitude          | X         |
+| sw_lat          | south-west latitude           | X         |
+| sw_lng          | south-west longitude          | X         |
+| filters         | array with companies ["lime"] | X         |
+| minimum_battery | filter min battery charge %   |           |
 
 Response:
 ```json
@@ -28,22 +29,24 @@ Response:
     "count": 2,
     "data": [
         {
+            "provider": "Lime",
             "id": "ET-7KYAGBIWC5V3UZDNYU5RAQRO2KHPRI4IJUODZXI",
             "code": "XXX-410",
             "status": "locked",
             "lat": -43.53248,
             "lng": 172.633915,
             "battery": 81,
-            "provider": "Lime"
+            "generation": "ES200"
         },
         {
+            "provider": "Lime",
             "id": "ET-J6SCPERGHEGLSPT7OLTLWNXNYO7OMYZ7A7TQTJY",
             "code": "XXX-878",
             "status": "locked",
             "lat": -43.532474,
             "lng": 172.633909,
             "battery": 55,
-            "provider": "Lime"
+            "generation": "ES200"
         }
     ]
 }
@@ -71,9 +74,9 @@ Response (Polyline):
             "id": "LPAIXU6PU2GMR",
             "name": "[Christchurch][SZ][CHCH_SERVICED_AREA]",
             "type": "service_zone",
-            "coordinates": {
+            "area": {
                 "type": "polyline",
-                "area": "nnvhG}b_|_@rV|iBdd@pOf_@gr@r}A}bC~F|L|GqIhB_BZaC~CyDRgEdCc@lQs\\xKjMht@euAxJqQ``@ku@VcD{@yi@tR_ADwaAq^ik@_JsyBsj@owA{WjClG}X|_@s|@aQkc@kXzJlUgo@eGkm@k}@kARyc@id@ubAxq@yfAtA_t@a@mU~FmQ|JcLjLuJnNwGvWoBwD}OuHqJeTgA`PoTn@sNgfApZlj@_fAfBw[_q@c]kE{VdJ}X~ZoBnDwe@hQef@xm@rSgEo^eh@{{@xEuZuFse@mg@`DwLbLoVuAgnQbyHcVdaDh\\j{A}QdRiGbo@aSroI{Gf}Elo@nbDdfBlsAxtH`sBBB"
+                "coordinates": "nnvhG}b_|_@rV|iBdd@pOf_@gr@r}A}bC~F|L|GqIhB_BZaC~CyDRgEdCc@lQs\\xKjMht@euAxJqQ``@ku@VcD{@yi@tR_ADwaAq^ik@_JsyBsj@owA{WjClG}X|_@s|@aQkc@kXzJlUgo@eGkm@k}@kARyc@id@ubAxq@yfAtA_t@a@mU~FmQ|JcLjLuJnNwGvWoBwD}OuHqJeTgA`PoTn@sNgfApZlj@_fAfBw[_q@c]kE{VdJ}X~ZoBnDwe@hQef@xm@rSgEo^eh@{{@xEuZuFse@mg@`DwLbLoVuAgnQbyHcVdaDh\\j{A}QdRiGbo@aSroI{Gf}Elo@nbDdfBlsAxtH`sBBB"
             },
             "lat": "-43.53026",
             "lng": "172.64023",
@@ -87,9 +90,9 @@ Response (Polyline):
             "id": "SCKYPBHZ245Q6",
             "name": "[Christchurch][LSZ][[Christchurch][Central Low Speed]]",
             "type": "low_speed_zone",
-            "coordinates": {
+            "area": {
                 "type": "polyline",
-                "area": "dwuhGmot|_@Cmc@}@B{H~MDfTpARjBz@n@f@hCuB"
+                "coordinates": "dwuhGmot|_@Cmc@}@B{H~MDfTpARjBz@n@f@hCuB"
             },
             "lat": "-43.533155",
             "lng": "172.63629",
@@ -107,15 +110,15 @@ Response (GeoJSON):
 ```json
 {
     "success": true,
-    "count": 3,
+    "count": 2,
     "data": [
         {
             "id": "LPAIXU6PU2GMR",
             "name": "[Christchurch][SZ][CHCH_SERVICED_AREA]",
             "type": "service_zone",
-            "coordinates": {
+            "area": {
                 "type": "geojson",
-                "area": [
+                "coordinates": [
                     [
                         -43.53784,
                         172.52415
@@ -143,9 +146,9 @@ Response (GeoJSON):
             "id": "SCKYPBHZ245Q6",
             "name": "[Christchurch][LSZ][[Christchurch][Central Low Speed]]",
             "type": "low_speed_zone",
-            "coordinates": {
+            "area": {
                 "type": "geojson",
-                "area": [
+                "coordinates": [
                     [
                         -43.53411,
                         172.63367
